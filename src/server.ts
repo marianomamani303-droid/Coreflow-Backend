@@ -47,9 +47,15 @@ async function startServer(): Promise<void> {
 
     process.once('SIGINT', shutdown)
     process.once('SIGTERM', shutdown)
-  } catch {
+  } catch (error) {
+    // Sólo el código del driver (p. ej. ER_ACCESS_DENIED_ERROR, ENOTFOUND,
+    // HANDSHAKE_SSL_ERROR): el mensaje completo puede incluir usuario o host.
+    const code =
+      typeof error === 'object' && error !== null && 'code' in error && typeof error.code === 'string'
+        ? ` (${error.code})`
+        : ''
     console.error(
-      '[server] No se pudo conectar a la base de datos. Revisá la disponibilidad del servidor SQL, TLS y las variables DB_*.',
+      `[server] No se pudo conectar a la base de datos${code}. Revisá la disponibilidad del servidor SQL, TLS y las variables DB_*.`,
     )
     await closeDatabase()
     process.exitCode = 1

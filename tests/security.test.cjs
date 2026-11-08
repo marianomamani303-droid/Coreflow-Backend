@@ -127,12 +127,30 @@ test('configuración productiva rechaza orígenes inseguros y claves de ejemplo'
     { DB_SSL: 'true', DB_HOST: '127.0.0.1' },
     { DB_SSL: 'false', DB_SSL_CA: 'private-ca.pem' },
     { NODE_ENV: 'prod' },
+    { CORS_ORIGINS: 'https://coreflow.example.com/app' },
+    { AUTH_COOKIE_SAME_SITE: 'bogus' },
   ])
     assert.notEqual(run(overrides).status, 0, JSON.stringify(Object.keys(overrides)))
-  const tls = run({ TRUST_PROXY: 'loopback', DB_SSL: 'true', DB_HOST: 'sql.example.com' })
+  // Barra final copiada desde el panel del hosting: mismo origen, se acepta.
+  assert.equal(
+    run({
+      PUBLIC_APP_URL: 'https://coreflow.example.com/',
+      CORS_ORIGINS: 'https://coreflow.example.com/',
+      AUTH_COOKIE_SAME_SITE: 'none',
+    }).status,
+    0,
+  )
+  // DB_SSL_CA vacío: el resultado no depende del .env local del desarrollador.
+  const tls = run({
+    TRUST_PROXY: 'loopback',
+    DB_SSL: 'true',
+    DB_HOST: 'sql.example.com',
+    DB_SSL_CA: '',
+  })
   assert.equal(tls.status, 0)
   assert.deepEqual(JSON.parse(tls.stdout).ssl, {
     rejectUnauthorized: true,
     verifyIdentity: true,
+    minVersion: 'TLSv1.2',
   })
 })

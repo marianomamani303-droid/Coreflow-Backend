@@ -9,6 +9,8 @@ coverage/
 dist/
 database/backups/
 *.pem
+# CA raíz público de TiDB Cloud (ISRG Root X1): no es secreto y Render lo necesita.
+!certs/isrgrootx1.pem
 *.key
 *.p12
 *.pfx

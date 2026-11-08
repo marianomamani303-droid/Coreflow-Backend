@@ -39,6 +39,7 @@ Las pruebas de navegador también requieren el frontend en una carpeta hermana `
 
 | Prefijo                                 | Función                                                                 |
 | --------------------------------------- | ----------------------------------------------------------------------- |
+| `/healthz`                              | Liveness para el Health Check de Render; sin consultar SQL              |
 | `/api/health`                           | Readiness SQL; 200 o 503, sin detalles privados                         |
 | `/api/auth`                             | Registro, login, usuario actual y logout                                |
 | `/api/companies`                        | Listado, creación y detalle de empresas accesibles                      |

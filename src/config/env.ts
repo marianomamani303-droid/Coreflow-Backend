@@ -1,4 +1,4 @@
-import { resolve } from 'node:path'
+import { isAbsolute, resolve } from 'node:path'
 import { readFileSync } from 'node:fs'
 import { isIP } from 'node:net'
 import dotenv from 'dotenv'
@@ -45,13 +45,20 @@ if (['sys', 'mysql', 'information_schema', 'performance_schema'].includes(databa
   throw new Error('DB_NAME debe ser la base de la aplicación, no una base del sistema.')
 }
 
+// Se tolera una barra final ("https://app.example.com/"), como la que copian los
+// paneles de hosting; cualquier otra ruta, query o credencial sigue rechazada.
 const corsOrigins = (process.env.CORS_ORIGINS ?? '')
   .split(',')
-  .map((origin) => origin.trim())
+  .map((origin) => origin.trim().replace(/\/$/, ''))
   .filter(Boolean)
 
 for (const origin of corsOrigins) {
-  const url = new URL(origin)
+  let url: URL
+  try {
+    url = new URL(origin)
+  } catch {
+    throw new Error('CORS_ORIGINS debe contener orígenes HTTP/HTTPS sin rutas.')
+  }
   if (!['http:', 'https:'].includes(url.protocol) || url.origin !== origin) {
     throw new Error('CORS_ORIGINS debe contener orígenes HTTP/HTTPS sin rutas.')
   }
@@ -142,11 +149,25 @@ if (databaseSSL && isIP(databaseHost)) {
     'DB_HOST con TLS debe ser un nombre DNS que coincida con el certificado.',
   )
 }
-const databaseCAPath = process.env.DB_SSL_CA?.trim()
+// Ruta absoluta (p. ej. /etc/secrets/isrgrootx1.pem en Render) o relativa a la raíz
+// del backend (certs/isrgrootx1.pem, versionado: es el CA público de TiDB Cloud).
+// Se aceptan separadores de Windows para que la misma ruta funcione en Linux.
+const databaseCAPath = process.env.DB_SSL_CA?.trim().replace(/\\/g, '/')
 if (databaseCAPath && !databaseSSL) throw new Error('DB_SSL_CA requiere DB_SSL=true.')
-const databaseCA = databaseCAPath
-  ? readFileSync(resolve(__dirname, '../../', databaseCAPath), 'utf8')
-  : undefined
+function readCertificate(path: string): string {
+  const absolute = isAbsolute(path) ? path : resolve(__dirname, '../../', path)
+  let content: string
+  try {
+    content = readFileSync(absolute, 'utf8')
+  } catch {
+    throw new Error(`No se pudo leer DB_SSL_CA (${absolute}). Revisá la ruta del certificado.`)
+  }
+  if (!content.includes('-----BEGIN CERTIFICATE-----')) {
+    throw new Error('DB_SSL_CA debe ser un certificado PEM.')
+  }
+  return content
+}
+const databaseCA = databaseCAPath ? readCertificate(databaseCAPath) : undefined
 const smtpUser = process.env.SMTP_USER?.trim() || ''
 const smtpPassword = process.env.SMTP_PASSWORD || ''
 if (Boolean(smtpUser) !== Boolean(smtpPassword)) {

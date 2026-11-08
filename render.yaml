@@ -1,0 +1,44 @@
+# Blueprint de Render (opcional). Documenta la configuración exacta del servicio.
+# Un servicio creado a mano NO lee este archivo; en ese caso copiar estos valores
+# en Settings/Environment. Los valores marcados sync: false se cargan en el panel.
+services:
+  - type: web
+    name: coreflow-backend
+    runtime: node
+    plan: free
+    branch: main
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: PUBLIC_APP_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: AUTH_COOKIE_SAME_SITE
+        value: none
+      - key: TRUST_PROXY
+        value: uniquelocal
+      - key: AUTH_SESSION_SECONDS
+        value: '28800'
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: '4000'
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        value: coreflow
+      - key: DB_SSL
+        value: 'true'
+      - key: DB_SSL_CA
+        value: certs/isrgrootx1.pem

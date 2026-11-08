@@ -22,7 +22,21 @@ for (const entry of git('ls-files', '--stage', '-z').split('\0')) {
   if (entry.startsWith('160000 ')) findings.push(`${entry.split('\t')[1]}: submódulo accidental`)
 }
 
+// Único PEM permitido: el CA raíz público ISRG Root X1 que exige TiDB Cloud.
+const publicCA = 'certs/isrgrootx1.pem'
+const publicCAFingerprint =
+  '96:BC:EC:06:26:49:76:F3:74:60:77:9A:CF:28:C5:A7:CF:E8:A3:C0:AA:E1:1A:8F:FC:EE:05:C0:BD:DF:08:C6'
+
 for (const file of files) {
+  if (file === publicCA) {
+    const pem = readFileSync(resolve(root, file), 'utf8')
+    const { X509Certificate } = require('node:crypto')
+    let fingerprint = ''
+    try { fingerprint = new X509Certificate(pem).fingerprint256 } catch {}
+    if (/PRIVATE KEY/.test(pem) || fingerprint !== publicCAFingerprint)
+      findings.push(`${file}: no es el CA público ISRG Root X1`)
+    continue
+  }
   if (
     /(^|\/)(node_modules|dist|logs|coverage|backups|\.audit|\.git)(\/|$)/.test(file) ||
     (/(^|\/)\.env(?:\.|$)/.test(file) && !/\.env(?:\.test)?\.example$/.test(file)) ||
@@ -43,7 +57,7 @@ for (const file of files) {
   ) findings.push(`${file}: posible secreto; revisar antes de publicar`)
 }
 
-for (const file of ['.env', '.env.xampp', '.env.test', 'certs/isrgrootx1.pem', 'node_modules/example', 'dist/example', 'database/backups/example.sql']) {
+for (const file of ['.env', '.env.xampp', '.env.test', 'certs/private.pem', 'certs/server.key', 'node_modules/example', 'dist/example', 'database/backups/example.sql']) {
   try { git('check-ignore', '--quiet', '--no-index', file) }
   catch { findings.push(`${file}: no está protegido por .gitignore`) }
 }

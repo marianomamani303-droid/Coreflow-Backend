@@ -17,8 +17,9 @@ Los parámetros de la captura son:
 
 La contraseña queda únicamente en `.env`. La configuración XAMPP anterior se
 conserva en `.env.xampp`. Ambos archivos están excluidos de Git.
-El certificado público adjunto se copió a `certs/isrgrootx1.pem`, también excluido.
-No se necesita una clave privada del cliente.
+El certificado público adjunto está en `certs/isrgrootx1.pem` y se versiona: es el CA
+raíz público ISRG Root X1 (SHA-256 `96:BC:EC:06:…:08:C6`, verificado por
+`scripts/check-repository.cjs`). No se necesita una clave privada del cliente.
 
 ```dotenv
 DB_HOST=gateway01.sa-east-1.prod.aws.tidbcloud.com
@@ -90,7 +91,7 @@ Referencias oficiales: [mysql2 y TLS](https://docs.pingcap.com/developer/dev-gui
 - Comprobaciones de configuración: rechazo de `DB_NAME=sys` y TiDB sin TLS;
   aceptación del perfil local mediante variables del proceso.
 - `node scripts/check-repository.cjs` desde la raíz: sin secretos detectados.
-  `.env`, `.env.xampp` y el PEM están ignorados y no están versionados.
+  `.env` y `.env.xampp` están ignorados y no están versionados.
 
 No se ejecutó la suite completa de negocio ni se transfirieron datos de XAMPP.
 
@@ -102,7 +103,7 @@ Rutas relativas a `CoreFlow Backend`:
 | --- | --- |
 | `.env` | Conexión TiDB y contraseña local; ignorado por Git |
 | `.env.xampp` | Copia de la configuración anterior; ignorada por Git |
-| `certs/isrgrootx1.pem` | Copia del CA adjunto; ignorada por Git |
+| `certs/isrgrootx1.pem` | CA raíz público de TiDB Cloud; versionado |
 | `src/config/database.ts` | Pool de promesas, inicialización UTC y timeout de conexión remota |
 | `src/config/env.ts` | TLS mínimo 1.2, TLS obligatorio en TiDB y rechazo de bases del sistema |
 | `src/server.ts` | Mensaje de fallo válido también para SQL remoto |
@@ -120,13 +121,14 @@ Rutas relativas a `CoreFlow Backend`:
 ## Hosting
 
 Configurar un servicio Node con directorio raíz vacío (este repositorio ya es el backend), Node 24 LTS,
-build `npm ci --include=dev && npm run build`, inicio `npm start` y health `/api/health`.
+build `npm ci --include=dev && npm run build`, inicio `npm start` y health `/healthz`
+(`/api/health` verifica además la conexión SQL).
 Aplicar `npm run db:setup` una vez desde un entorno confiable antes del inicio;
 las migraciones no se ejecutan en cada arranque HTTP.
 
 Variables de base: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`,
-`DB_SSL=true`, `DB_SSL_CA`. Subir el CA público como archivo del proveedor y usar
-su ruta real en `DB_SSL_CA`; no usar una ruta de Windows en Linux.
+`DB_SSL=true`, `DB_SSL_CA=certs/isrgrootx1.pem` (incluido en el repositorio; también
+se admite una ruta absoluta como `/etc/secrets/isrgrootx1.pem`).
 
 Variables de aplicación: `NODE_ENV=production`, `HOST=0.0.0.0`, el `PORT` asignado
 por el proveedor, `JWT_SECRET` aleatorio de al menos 32 bytes,

@@ -41,6 +41,12 @@ app.use('/api/companies/:companyId/settings', settingsRoutes)
 app.use('/api/me/preferences', preferencesRouter)
 app.use('/api/companies', companiesRoutes)
 
+// Liveness para el Health Check de Render: no consulta la base ni expone detalles.
+// /api/health sigue verificando la conexión SQL real.
+app.get('/healthz', (_request, response) => {
+  response.json({ status: 'ok' })
+})
+
 app.get('/api/health', async (_request, response) => {
   response.setHeader('Cache-Control', 'no-store')
 
