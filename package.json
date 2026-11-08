@@ -1,0 +1,43 @@
+{
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.8",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
+    "jsonwebtoken": "^9.0.3",
+    "mysql2": "^3.24.6",
+    "nodemailer": "^10.2.1"
+  },
+  "name": "coreflow-backend",
+  "version": "0.1.0",
+  "private": true,
+  "engines": { "node": ">=22.12.0" },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node scripts/test.cjs",
+    "test:invitations": "npm run build && node scripts/test.cjs invitations",
+    "test:invitations:browser": "npm run build && node scripts/test.cjs invitations-browser",
+    "test:invitations:db": "npm run build && node scripts/test.cjs database",
+    "test:browser": "npm run build && node scripts/test.cjs browser",
+    "start": "node dist/server.js",
+    "db:setup": "npm run build && node scripts/database.cjs",
+    "db:check": "npm run build && node scripts/check-database.cjs",
+    "db:verify": "npm run build && node scripts/database.cjs --verify"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^26.6.5",
+    "@types/nodemailer": "^8.0.2",
+    "playwright": "^1.64.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

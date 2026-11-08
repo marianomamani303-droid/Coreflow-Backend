@@ -167,10 +167,21 @@ if (
   )
 }
 
+// lax: frontend y API bajo el mismo sitio (dominio propio o rewrite /api del hosting).
+// none: frontend en otro sitio (p. ej. *.vercel.app → *.onrender.com); exige HTTPS.
+const cookieSameSite = (process.env.AUTH_COOKIE_SAME_SITE?.trim() || 'lax').toLowerCase()
+if (cookieSameSite !== 'lax' && cookieSameSite !== 'strict' && cookieSameSite !== 'none') {
+  throw new Error('AUTH_COOKIE_SAME_SITE debe ser lax, strict o none.')
+}
+if (cookieSameSite === 'none' && !production) {
+  throw new Error('AUTH_COOKIE_SAME_SITE=none requiere NODE_ENV=production (cookies Secure).')
+}
+
 export const env = {
   production,
-  auth: { secret: jwtSecret, sessionSeconds },
-  host: process.env.HOST?.trim() || '127.0.0.1',
+  auth: { secret: jwtSecret, sessionSeconds, cookieSameSite },
+  // Render define RENDER=true y exige escuchar en todas las interfaces.
+  host: process.env.HOST?.trim() || (process.env.RENDER === 'true' ? '0.0.0.0' : '127.0.0.1'),
   port: port('PORT', '3000'),
   corsOrigins,
   trustProxy,
