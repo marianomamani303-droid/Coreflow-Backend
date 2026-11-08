@@ -1,3 +1,4 @@
+
 import { app } from './app'
 import { checkDatabaseConnection, closeDatabase } from './config/database'
 import { env } from './config/env'
@@ -6,17 +7,19 @@ async function startServer(): Promise<void> {
   try {
     await checkDatabaseConnection()
 
-    const server = app.listen(env.port, env.host)
+    // Permite que Render detecte el puerto del backend.
+    const host = '0.0.0.0'
+    const server = app.listen(env.port, host)
 
     server.once('listening', () => {
-      console.log(`CoreFlow Backend funcionando en http://${env.host}:${env.port}`)
+      console.log(`CoreFlow Backend funcionando en http://${host}:${env.port}`)
       console.log(
-        `Health: http://${env.host}:${env.port}/api/health · Base de datos conectada`,
+        `Health: http://${host}:${env.port}/api/health · Base de datos conectada`,
       )
     })
 
     server.on('error', async () => {
-      console.error('[server] No se pudo abrir el puerto. Revisá HOST y PORT.')
+      console.error('[server] No se pudo abrir el puerto. Revisá PORT.')
       await closeDatabase()
       process.exitCode = 1
     })
@@ -26,12 +29,14 @@ async function startServer(): Promise<void> {
     function shutdown(): void {
       if (shuttingDown) return
       shuttingDown = true
+
       console.log('[server] Cerrando servidor y conexiones SQL...')
 
       const timeout = setTimeout(() => {
         server.closeAllConnections()
         process.exit(1)
       }, 10000)
+
       timeout.unref()
 
       server.close(async () => {
@@ -48,15 +53,18 @@ async function startServer(): Promise<void> {
     process.once('SIGINT', shutdown)
     process.once('SIGTERM', shutdown)
   } catch (error) {
-    // Sólo el código del driver (p. ej. ER_ACCESS_DENIED_ERROR, ENOTFOUND,
-    // HANDSHAKE_SSL_ERROR): el mensaje completo puede incluir usuario o host.
     const code =
-      typeof error === 'object' && error !== null && 'code' in error && typeof error.code === 'string'
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      typeof error.code === 'string'
         ? ` (${error.code})`
         : ''
+
     console.error(
       `[server] No se pudo conectar a la base de datos${code}. Revisá la disponibilidad del servidor SQL, TLS y las variables DB_*.`,
     )
+
     await closeDatabase()
     process.exitCode = 1
   }
